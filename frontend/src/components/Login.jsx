@@ -343,7 +343,7 @@ export default function Login() {
       }} />
 
       {/* ── Bg: vignette ── */}
-      <div style={{
+      <div className="login-vignette" style={{
         position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
         background: 'radial-gradient(ellipse at center, transparent 45%, rgba(18,20,20,0.7) 100%)',
       }} />
@@ -418,11 +418,9 @@ export default function Login() {
         initial={{ opacity: 0, y: 30, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.6, ease: [0.25, 0.8, 0.25, 1] }}
+        className="login-card"
         style={{
           width: 'min(100%, 420px)',
-          background: 'rgba(30, 32, 32, 0.7)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
           borderRadius: '1.75rem',
           padding: '2.75rem',
           boxShadow: '0 8px 48px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { CheckCircle, Clock, User as UserIcon, Scissors, Play, ChevronLeft, ChevronRight, Calendar, Bell, Edit2, XCircle } from 'lucide-react';
+import { CheckCircle, Clock, User as UserIcon, Scissors, Play, ChevronLeft, ChevronRight, Calendar, Bell, Edit2, XCircle, Keyboard, ExternalLink } from 'lucide-react';
 import PageTransition from './PageTransition';
 import EmptyState from './EmptyState';
 import FormDialog from './FormDialog';
@@ -86,6 +86,7 @@ export default function GestionCitas() {
   const [editCitaId, setEditCitaId] = useState(null);
   const [editForm, setEditForm] = useState({ cliente_nombre: '', fecha: '', hora: '', barbero_id: '', servicio_id: '' });
   const [savingEdit, setSavingEdit] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const navigate = useNavigate();
   const notifiedRef = useRef(new Set());
   
@@ -154,6 +155,39 @@ export default function GestionCitas() {
     const interval = setInterval(checkProximas, 30000);
     return () => clearInterval(interval);
   }, [checkProximas, citas, agendaDate]);
+
+  const fetchCitasRef = useRef();
+  const agendaDateRef = useRef();
+
+  useEffect(() => {
+    fetchCitasRef.current = fetchCitas;
+    agendaDateRef.current = agendaDate;
+  });
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        navigate('/dashboard/registrar-cita');
+      }
+      if (e.ctrlKey && e.key === 'r') {
+        if (!showCalendar) {
+          e.preventDefault();
+          if (fetchCitasRef.current) fetchCitasRef.current(agendaDateRef.current);
+        }
+      }
+      if (e.key === 'Escape') {
+        if (editCitaId) setEditCitaId(null);
+        else if (completarModalData) setCompletarModalData(null);
+        else if (showShortcuts) setShowShortcuts(false);
+      }
+      if (e.key === '?' && e.shiftKey) {
+        setShowShortcuts(s => !s);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate, showCalendar, editCitaId, completarModalData, showShortcuts]);
 
   const fetchCitas = async (fecha = agendaDate) => {
     setLoading(true);
@@ -503,16 +537,14 @@ export default function GestionCitas() {
                           whileHover={{ scale: 1.08 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => {
-                            setAgendaDate(dateStr);
-                            fetchCitas(dateStr);
-                            setShowCalendar(false);
+                            fetchStats(dateStr);
                           }}
                           style={{
                             padding: '0.55rem 0', borderRadius: '10px',
-                            border: dateStr === agendaDate ? '2px solid var(--accent-primary)' : isToday ? '2px solid rgba(111,78,55,0.4)' : 'none',
-                            background: dateStr === agendaDate ? 'linear-gradient(135deg, #6f4e37, #8a6344)' : isToday ? 'rgba(111,78,55,0.12)' : 'transparent',
-                            color: dateStr === agendaDate ? '#fff' : isToday ? 'var(--accent-primary)' : 'var(--text-main)',
-                            fontWeight: dateStr === agendaDate || isToday ? 700 : 500,
+                            border: dateStr === selectedStatsDate ? '2px solid var(--accent-primary)' : isToday ? '2px solid rgba(111,78,55,0.4)' : 'none',
+                            background: dateStr === selectedStatsDate ? 'linear-gradient(135deg, #6f4e37, #8a6344)' : isToday ? 'rgba(111,78,55,0.12)' : 'transparent',
+                            color: dateStr === selectedStatsDate ? '#fff' : isToday ? 'var(--accent-primary)' : 'var(--text-main)',
+                            fontWeight: dateStr === selectedStatsDate || isToday ? 700 : 500,
                             fontSize: '0.85rem', cursor: 'pointer',
                             transition: 'all 0.15s',
                           }}
@@ -537,14 +569,36 @@ export default function GestionCitas() {
                   <div style={{ textAlign: 'center', padding: '1rem 0', color: 'var(--text-muted)', fontSize: '0.75rem' }}>Cargando...</div>
                 ) : statsData ? (
                   <>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      {new Date(selectedStatsDate + 'T12:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {new Date(selectedStatsDate + 'T12:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          setAgendaDate(selectedStatsDate);
+                          fetchCitas(selectedStatsDate);
+                          setShowCalendar(false);
+                        }}
+                        style={{
+                          padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid var(--border-color)',
+                          background: 'var(--surface-color)', color: 'var(--accent-primary)',
+                          cursor: 'pointer', fontSize: '0.6rem', fontWeight: 600,
+                          display: 'flex', alignItems: 'center', gap: '0.2rem',
+                        }}
+                        title="Ver agenda del día"
+                      >
+                        <ExternalLink size={10} /> Agenda
+                      </motion.button>
                     </div>
                     {statsData.clientes.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: '0.5rem 0', color: 'var(--text-muted)', fontSize: '0.7rem' }}>Sin clientes</div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: '280px', overflowY: 'auto', paddingRight: '2px' }}>
-                        {statsData.clientes.map((cl, i) => (
+                        {statsData.clientes.map((cl, i) => {
+                          const isCompletada = cl.estado === 'completada';
+                          return (
                           <div key={i} style={{
                             display: 'flex', alignItems: 'center', gap: '0.4rem',
                             padding: '0.35rem 0.4rem', borderRadius: '8px',
@@ -553,18 +607,20 @@ export default function GestionCitas() {
                           }}>
                             <div style={{
                               width: '20px', height: '20px', borderRadius: '5px',
-                              background: cl.estado === 'completada' ? 'rgba(22,163,74,0.15)' : 'rgba(245,158,11,0.15)',
+                              background: isCompletada ? 'rgba(22,163,74,0.15)' : 'rgba(107,114,128,0.15)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                             }}>
-                              <UserIcon size={10} color={cl.estado === 'completada' ? '#16a34a' : '#f59e0b'} />
+                              <CheckCircle size={10} color={isCompletada ? '#16a34a' : '#9ca3af'} />
                             </div>
                             <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{cl.cliente_nombre}</span>
+                              <span style={{ fontWeight: 600, color: isCompletada ? '#16a34a' : 'var(--text-muted)' }}>{cl.cliente_nombre}</span>
                               <span style={{ color: 'var(--text-muted)', marginLeft: '0.2rem' }}>· {cl.servicio_nombre}</span>
                             </div>
-                            <span style={{ fontWeight: 700, color: 'var(--accent-primary)', flexShrink: 0 }}>${cl.precio}</span>
+                            <span style={{ fontWeight: 700, color: isCompletada ? '#16a34a' : 'var(--text-muted)', flexShrink: 0 }}>
+                              {isCompletada ? `$${cl.precio}` : '—'}
+                            </span>
                           </div>
-                        ))}
+                        );})}
                       </div>
                     )}
                   </>
@@ -1247,6 +1303,45 @@ export default function GestionCitas() {
           </div>
         </FormDialog>
       )}
+      {/* Keyboard shortcut hint */}
+      <div className="shortcut-hint">
+        <motion.button
+          className="shortcut-hint-btn"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setShowShortcuts(s => !s)}
+          title="Atajos de teclado (Shift+?)"
+        >
+          <Keyboard size={18} />
+        </motion.button>
+        {showShortcuts && (
+          <motion.div
+            className="shortcut-hint-panel"
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+          >
+            <h4>Atajos de teclado</h4>
+            <div className="shortcut-row">
+              <span>Nueva cita</span>
+              <span className="shortcut-key"><span>Ctrl</span> + <span>N</span></span>
+            </div>
+            <div className="shortcut-row">
+              <span>Actualizar agenda</span>
+              <span className="shortcut-key"><span>Ctrl</span> + <span>R</span></span>
+            </div>
+            <div className="shortcut-row">
+              <span>Cerrar ventana</span>
+              <span className="shortcut-key"><span>Esc</span></span>
+            </div>
+            <div className="shortcut-row">
+              <span>Este panel</span>
+              <span className="shortcut-key"><span>Shift</span> + <span>?</span></span>
+            </div>
+          </motion.div>
+        )}
+      </div>
     </PageTransition>
   );
 }

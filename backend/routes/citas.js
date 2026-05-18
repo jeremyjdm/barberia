@@ -165,7 +165,7 @@ router.get('/estadisticas', requireAuth, (req, res) => {
             SELECT c.cliente_nombre, c.hora, s.nombre as servicio_nombre, s.precio, c.estado
             FROM citas c
             JOIN servicios s ON c.servicio_id = s.id
-            WHERE c.fecha = ? AND c.estado IN ('completada', 'en_turno')
+            WHERE c.fecha = ? AND c.estado != 'cancelada'
             ORDER BY c.hora ASC
         `).all(fecha);
 

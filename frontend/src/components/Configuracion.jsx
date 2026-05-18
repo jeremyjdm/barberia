@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Save, Upload, Download, UploadCloud, Store, MapPin, Phone, Image as ImageIcon } from "lucide-react";
+import { Save, Upload, Download, UploadCloud, Store, MapPin, Phone, Image as ImageIcon, Keyboard, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "../contexts/ToastContext";
 import PageTransition from "./PageTransition";
 
@@ -16,6 +16,7 @@ export default function Configuracion() {
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const logoInputRef = useRef(null);
   const restoreInputRef = useRef(null);
 
@@ -319,6 +320,66 @@ export default function Configuracion() {
               <UploadCloud size={18} />
               {importing ? "Restaurando..." : "Seleccionar archivo ZIP y restaurar"}
             </motion.button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bento-grid" style={{ marginTop: "1rem" }}>
+        <div className="bento-col-12">
+          <div className="bento-card">
+            <div
+              onClick={() => setShowShortcuts(s => !s)}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                cursor: "pointer",
+              }}
+            >
+              <h3 style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: 0 }}>
+                <Keyboard size={18} /> Atajos de Teclado
+              </h3>
+              <motion.div
+                animate={{ rotate: showShortcuts ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                {showShortcuts ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </motion.div>
+            </div>
+            {showShortcuts && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                transition={{ duration: 0.2 }}
+                style={{ marginTop: "1rem", overflow: "hidden" }}
+              >
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                  {[
+                    { keys: ["Ctrl", "N"], desc: "Nueva cita" },
+                    { keys: ["Ctrl", "R"], desc: "Actualizar agenda" },
+                    { keys: ["Esc"], desc: "Cerrar ventana / modal" },
+                    { keys: ["Shift", "?"], desc: "Mostrar/ocultar atajos" },
+                  ].map((s, i) => (
+                    <div key={i} style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "0.6rem 0.75rem", borderRadius: "8px",
+                      background: "rgba(111,78,55,0.06)",
+                    }}>
+                      <span style={{ fontSize: "0.85rem", color: "var(--text-main)" }}>{s.desc}</span>
+                      <span className="shortcut-key">
+                        {s.keys.map((k, j) => (
+                          <span key={j}>{j > 0 && <span> + </span>}<span>{k}</span></span>
+                        ))}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p style={{
+                  fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.75rem",
+                  fontStyle: "italic",
+                }}>
+                  Los atajos funcionan en la pantalla de Gestión de Citas.
+                </p>
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
